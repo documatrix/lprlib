@@ -3,9 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libpslib
-Description: A library to read, analyze and write PostScript files.
-Version: @PSLIB_VERSION@
-Libs: -L${libdir} -l@PSLIB_NAME@
+Name: liblprdaemon
+Description: A library to read, analyze lpr-protokoll.
+Version: @LPR_DAEMON_VERSION@
+Libs: -L${libdir} -l@LPR_DAEMO_NAME@
 Libs.private: @LIBS@
-Cflags: -I${includedir}/@PSLIB_NAME@/
+Cflags: -I${includedir}/@LPR_DAEMO_NAME@/

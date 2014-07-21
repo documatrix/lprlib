@@ -4,8 +4,15 @@ namespace LprDaemon
 {
   public class Server : GLib.Object
   {
+
+    /* All connections */
     private Connection[ ] con;
 
+    /**
+     * Sets the lpr_deamon
+     * @param port the port of the deamon if this is not set it's 515
+     * @param ip_address the ip_address of the deamon if this is not set it's the ip address of the server
+     */
     public Server( uint16 port = 515 , string? ip_address = null )
     {
       InetAddress address = new InetAddress.loopback( SocketFamily.IPV4 );
@@ -40,9 +47,13 @@ namespace LprDaemon
       this.listen( socket );
     }
 
+    /**
+     * This method listen to the socekt for new connections
+     * @param socket the socked of the server
+     */
     public void listen( Socket socket )
     {
-       #if GLIB_2_32
+      #if GLIB_2_32
         new Thread<void*>( "connection", ( ) =>
         {
           while( true )
@@ -74,11 +85,19 @@ namespace LprDaemon
       #endif
     }
 
+    /**
+     * This method returns all connections
+     * @return all connections
+     */
     public Connection[ ] get_connections( )
     {
       return con;
     }
 
+    /**
+     * This delete a connection
+     * @param connection The number of the connection which should be deleted. 0 is the first connection.
+     */
     public void del_connection( uint64 connection )
     {
       Connection[ ] buffer_conections = con;
@@ -91,33 +110,33 @@ namespace LprDaemon
         }
       }
     }
-
   }
+
   /**
    * This class includes all methods to read a PS-File
    * It adds the pages and gets the position of the areas
    */
   public class Connection : GLib.Object
   {
-    /* man befindet sich im Header */
-    public static const int16 HEADER = 0;
+    /* in begin */
+    public static const int16 BEGIN = 0;
 
-    /* man befindet sich im Preamble */
+    /* in FILEDATA right now */
     public static const int16 FILEDATA = 2;
 
-    /* man befindet sich im Page-Bereich */
+    /* in DATABLOCK-area right now */
     public static const int16 DATABLOCK = 3;
 
-    /* man befindet sich im Trailer */
+    /* end of the data right now */
     public static const int16 END = 4;
 
-    /* man befindet sich am Ende des Files */
+    /* error */
     public static const uint8 ERROR = -1;
 
     /* buffer uint8 array */
     private uint8[] buffer_string;
 
-    /* the  */
+    /* the aktuell filesize */
     private int64 temp_filesize = 0;
 
     /* connection ID */
@@ -156,10 +175,17 @@ namespace LprDaemon
     /* Indenting count */
     public int64 indenting_count;
 
+    /* Status */
     public int16 status = 0;
 
+    /* Status */
     public string print_file_with_pr = null;
 
+    /**
+     * Sets the connection
+     * @param port the socked
+     * @param buffer_size the buffer length, if buffer_size isn't set it's 8192
+     */
     public Connection( int64 id, Socket socket, int64 buffer_size = 8192 )
     {
       this.connection_id = id;
@@ -179,6 +205,9 @@ namespace LprDaemon
       #endif
     }
 
+    /**
+     * This method runs and read the data from the client
+     */
     public void* run_connection( )
     {
       bool in_data;
@@ -191,7 +220,6 @@ namespace LprDaemon
           try
           {
             len = connection.receive ( buffer );
-            stdout.printf( "len: %d\n", (int)len );
           }
           catch( Error e )
           {
@@ -253,7 +281,7 @@ namespace LprDaemon
                   stdout.printf( "-" );
                 }
               }
-              stdout.printf( "> %f %\n", pro );
+              stdout.printf( "> %f %\r", pro );
             }
 
           }
@@ -267,6 +295,11 @@ namespace LprDaemon
       return null;
     }
 
+    /**
+     * This method choose if the data should go to the file or to the interpreter
+     * @param data The data from the client
+     * @param len The length of data
+     */
     public void handle_data( uint8[] data, int64 len )
     {
       if( this.status != DATABLOCK )
@@ -284,6 +317,11 @@ namespace LprDaemon
       }
     }
 
+    /**
+     * This method add the data to the output file
+     * @param data The data from the client
+     * @param len The length of data
+     */
     public void add_to_file( uint8[] data, int64 len )
     {
       uint8[] test = { };
@@ -303,6 +341,11 @@ namespace LprDaemon
       }
     }
 
+    /**
+     * This method interprete the data and set the variables
+     * @param data The data from the client
+     * @param len The length of data
+     */
     public void interprete( uint8[] data, int64 len )
     {
       uint64 first_symbol = data[ 0 ];
