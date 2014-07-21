@@ -1,0 +1,32 @@
+project (lpr_send)
+cmake_minimum_required (VERSION 2.6)
+cmake_policy (VERSION 2.8)
+list (APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+option(ICON_UPDATE "Update the icon cache after installing" ON)
+option(BUILD_VALADOC "Build API documentation if Valadoc is available" OFF)
+
+set( LPR_SEND_MAJOR 1 )
+set( LPR_SEND_MINOR 0 )
+set( LPR_SEND_RELEASE 0 )
+set( LPR_SEND_NAME lpr_send-${LPR_SEND_MAJOR}.${LPR_SEND_MINOR} )
+set( LPR_SEND_VERSION ${LPR_SEND_MAJOR}.${LPR_SEND_MINOR}.${LPR_SEND_RELEASE} )
+
+set(HAVE_VALADOC OFF)
+if(BUILD_VALADOC)
+	find_package(Valadoc)
+	if(VALADOC_FOUND)
+		set(HAVE_VALADOC ON)
+		include(Valadoc)
+	else()
+		message("Valadoc not found, will not build documentation")
+	endif()
+endif()
+
+find_package(PkgConfig)
+
+set (MODULES_TO_CHECK glib-2.0 MagickWand gobject-2.0 gio-2.0 gthread-2.0)
+pkg_check_modules(DEPS REQUIRED ${MODULES_TO_CHECK})
+
+add_subdirectory(src)
+add_subdirectory(tests)
+add_subdirectory(doc)

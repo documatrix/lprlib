@@ -1,0 +1,4 @@
+# Kompilieren
+
+Um die lpr_send-Lib zu kompilieren muss nur folgender Befehl ausgeführt werden:
+make
