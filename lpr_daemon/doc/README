@@ -1,0 +1,4 @@
+# Kompilieren
+
+Um die lpr_daemon-Lib zu kompilieren muss nur folgender Befehl ausgeführt werden:
+make
