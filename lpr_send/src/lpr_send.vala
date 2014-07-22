@@ -3,25 +3,30 @@ using DMLib;
 namespace LprLib
 {
   /**
+   * This errordomain contains some errors which may occur when you work with LprSend.
+   */
+  public errordomain LprError
+  {
+    /* Hostname not found Error */
+    HOSTNAME_NOT_FOUND,
+
+    /* Printer return an Error */
+    PRINTER_ERROR,
+
+    /* Configuration not found Error */
+    CONFIG_NOT_FOUND,
+  }
+
+  /**
    * This class includes all methods to read a LprSender
    * It send send files to the remote printer
    */
   public class LprSend : GLib.Object
   {
     /**
-     * This is the hostname of the print_server
-     */
-    string? print_server = null;
-
-    /**
      * This file is sent to the remote printer
      */
     string? input_file_name = null;
-
-    /**
-     * Directory prefix for the output file
-     */
-    string? queue = null;
 
     /**
      * This socket for the connection
@@ -32,11 +37,6 @@ namespace LprLib
      * The max size of one transmit
      */
     uint64 max_size = 16*1024;
-
-    /**
-     * If noprint is set, the file will not printed
-     */
-    bool no_print = false;
 
     /**
      * The configuration for the remote printer
@@ -50,12 +50,18 @@ namespace LprLib
      * @param port The port of the remote printer
      * @retrun 0 if there wasn't an error.
      */
-    public LprSend( string hostname, string file_path, uint16 port=515 )
+    public LprSend( string hostname, string file_path, uint16 port = 515 ) throws LprError, Error
     {
+      /* Set the file control */
       File file = File.new_for_path( file_path );
+
+      /* Set the input_file_name */
       input_file_name = file_path;
+
+      /* Set the basename of the for the config */
       string input_file_basename = file.get_basename( );
 
+      /* Initializes the config */
       config = new HashTable<char?, string?> ( str_hash, str_equal );
 
       /* Host name */
@@ -99,26 +105,21 @@ namespace LprLib
        * config.insert( 'v', null ); // Print raster file
        */
 
-      try
+      /* Initializes the socket connection */
+      socket = new Socket( SocketFamily.IPV4, SocketType.STREAM, SocketProtocol.TCP );
+
+      /* Set the IP-Address from the remote Server */
+      InetAddress address = get_ip( hostname );
+      if( address != null )
       {
-        socket = new Socket( SocketFamily.IPV4, SocketType.STREAM, SocketProtocol.TCP );
-        InetAddress address = get_ip( hostname );
-        if( address != null)
-        {
-          /* Connection to Server! */
-          InetSocketAddress inetaddress = new InetSocketAddress ( address, port );
-          socket.connect( inetaddress );
-        }
-        else
-        {
-          /* Server not found! */
-          stderr.printf( "Could not found server( %s )!\n", hostname );
-        }
+        /* Connect to Server! */
+        InetSocketAddress inetaddress = new InetSocketAddress ( address, port );
+        socket.connect( inetaddress );
       }
-      catch( Error e ) 
+      else
       {
-        /* Could not connect! */
-        stderr.printf( "Could not connect to server( %s ): %s\n", hostname, e.message );
+        /* Server not found! */
+        throw new LprError.HOSTNAME_NOT_FOUND( "Could not found server( %s )!\n", hostname );
       }
     }
 
@@ -127,29 +128,21 @@ namespace LprLib
      * @param hostname This is the hostname of the print_server
      * @retrun the IP Address of the hostname
      */
-    public InetAddress? get_ip( string hostname )
+    public InetAddress? get_ip( string hostname ) throws Error
     {
+      /* Try parse the IP-Address */
       InetAddress address = new InetAddress.from_string( hostname );
       if( address == null )
       {
-        try 
-        {
-          Resolver resolver = Resolver.get_default( );
-          List<InetAddress> addresses = resolver.lookup_by_name( hostname, null );
+        /* No IP-Address -> Try to resolve the hostname */
+        Resolver resolver = Resolver.get_default( );
 
-          unowned List<InetAddress> element = addresses.first( );
-          if(element == null)
-          {
-            return null;
-          }
-          address = element.data;
+        /* Resolve the IP-Addresses */
+        List<InetAddress> addresses = resolver.lookup_by_name( hostname, null );
 
-        }
-        catch( Error e )
-        {
-          stderr.printf( "Server not found( %s ): Could not resolve IP-Address!\n", hostname );
-          return null;
-        }
+        /* Get the first IP-Address */
+        unowned List<InetAddress> element = addresses.first( );
+        address = element.data;
       }
       return address;
     }
@@ -157,192 +150,179 @@ namespace LprLib
     /**
      * Send the configruation to the remote printer
      * @param queue Directory prefix for the output file
-     * @retrun 0 if there wasn't an error.
      */
-    public bool send_configuration( string queue )
+    public void send_configuration( string queue ) throws LprError, Error
     {
-      try
+      /*
+       * Send Directory prefix for the output file
+       * config_transmit is the string which is sent to the remote Server
+       * A config transmit must have a new line command at the ending
+       */
+      string config_transmit = "%c".printf( 0x02 ) + queue + "\n";
+      socket.send( config_transmit.data );
+      stdout.printf( "\n\nStart Config: " + config_transmit );
+
+
+      /* receive_buffer is the buffer for the answer of the remote Server */
+      uint8 receive_buffer[ 1 ];
+
+      /*
+       * Receive answer ( 0 if there wasn't an error ) 
+       * len is length of the answer, maximum length is the receive_buffer size
+       */
+      size_t len = socket.receive( receive_buffer );
+      if( len != 0 )
       {
-        /* Send Directory prefix for the output file */
-        string data = "%c".printf(0x02) + queue + "\n";
-        socket.send( data.data );
-        stdout.write( data.data );
-
-        /* Receive answer ( 0 if there wasn't an error ) */
-        uint8 receive_buffer[ 1 ];
-        size_t len = socket.receive( receive_buffer );
-        if( len != 0 )
+        stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
+        if( receive_buffer[ 0 ] != 0 )
         {
-          stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
-          if( receive_buffer[ 0 ] != 0 )
-          {
-            stderr.printf( "Printer reported an error (%d)!", receive_buffer[ 0 ] );
-            return false;
-          }
-        }
-
-        /* Create config data string */
-        data = "";
-        if( config != null)
-        {
-          config.foreach((c_key, c_value) => 
-          {
-            if( c_value != null )
-            {
-              data += "%c%s\n".printf( c_key, c_value );
-            }
-          });
-        }
-        else
-        {
-          stderr.printf( "No configuration found!" );
-          return false;
-        }
-
-        /* Send the server the length of the configuration */
-        string text= "%c%s cfA000%s\n".printf( 0x02, data.length.to_string( ), GLib.Environment.get_host_name( ) );
-        socket.send( text.data );
-        stdout.write( text.data );
-
-        /* Receive answer ( 0 if there wasn't an error ) */
-        len = socket.receive( receive_buffer );
-        if( len != 0 )
-        {
-          stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
-          if( receive_buffer[ 0 ] != 0 )
-          {
-            stderr.printf( "Printer reported an error (%d)!", receive_buffer[ 0 ] );
-            return false;
-          }
-        }
-
-        /* Send the server the configuration */
-        uint8[ ] send_buffer = data.data;
-        send_buffer += 0;
-        socket.send( send_buffer );
-        stdout.write( data.data );
-
-        /* Receive answer ( 0 if there wasn't an error ) */
-        len = socket.receive( receive_buffer );
-        if( len != 0 )
-        {
-          stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
-          if( receive_buffer[ 0 ] != 0 )
-          {
-            stderr.printf( "Printer reported an error (%d)!", receive_buffer[ 0 ] );
-            return false;
-          }
+          throw new LprError.PRINTER_ERROR( "Printer reported an error (" + receive_buffer[ 0 ].to_string( "%d" ) + ")!" );
         }
       }
-      catch( Error e )
+
+      /* Create config data string */
+      string config_data = "";
+      if( config != null )
       {
-        stderr.printf( "Failed to send Configruation!: %s", e.message );
-        return false;
+        config.foreach( ( c_key, c_value ) => 
+        {
+          if( c_value != null )
+          {
+            config_data += "%c%s\n".printf( c_key, c_value );
+          }
+        } );
       }
-      return true;
+      else
+      {
+        throw new LprError.CONFIG_NOT_FOUND( "Cannot found printer configuration!" );
+      }
+
+      /* Send the server the length of the configuration */
+      string config_info = "%c%s cfA000%s\n".printf( 0x02, config_data.length.to_string( ), GLib.Environment.get_host_name( ) );
+      socket.send( config_info.data );
+      stdout.printf( "Config info: " + config_info );
+
+      /* Receive answer ( 0 if there wasn't an error ) */
+      len = socket.receive( receive_buffer );
+      if( len != 0 )
+      {
+        stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
+        if( receive_buffer[ 0 ] != 0 )
+        {
+          throw new LprError.PRINTER_ERROR( "Printer reported an error (" + receive_buffer[ 0 ].to_string( "%d" ) + ")!" );
+        }
+      }
+
+      /*
+       * Send the server the configuration
+       * A data transmit must have a 0 byte at the ending
+       */
+      uint8[ ] send_buffer = config_data.data;
+      send_buffer += 0;
+      socket.send( send_buffer );
+      stdout.printf( "Config: \n" + config_data );
+
+      /* Receive answer ( 0 if there wasn't an error ) */
+      len = socket.receive( receive_buffer );
+      if( len != 0 )
+      {
+        stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
+        if( receive_buffer[ 0 ] != 0 )
+        {
+          throw new LprError.PRINTER_ERROR( "Printer reported an error (" + receive_buffer[ 0 ].to_string( "%d" ) + ")!" );
+        }
+      }
     }
 
     /**
      * Send the file to the remote printer
      * @param file_path This file is sent to the remote printer
-     * @retrun 0 if there wasn't an error.
      */
-    public bool send_file()
+    public void send_file( ) throws LprError, Error
     {
-      try
+      /* Prepare the input file for reading */
+      File file = File.new_for_path ( input_file_name );
+      FileInputStream @is = file.read( );
+
+      /* Get the size of the input file */
+      FileInfo file_info = file.query_info( "*", FileQueryInfoFlags.NONE );
+      uint64 file_size = file_info.get_size( );
+
+      /* Send the server the length of the input file */
+      string data_info = "%c%s dfA000%s\n".printf( 0x03, file_size.to_string( ), GLib.Environment.get_host_name( ) );
+      socket.send( data_info.data );
+      stdout.printf( "\nData info: " + data_info );
+
+      /* receive_buffer is the buffer for the answer of the remote Server */
+      uint8 receive_buffer[ 1 ];
+
+      /*
+       * Receive answer ( 0 if there wasn't an error ) 
+       * len is length of the answer, maximum length is the receive_buffer size
+       */
+      size_t len = socket.receive( receive_buffer );
+      if( len != 0 )
       {
-        /* Prepare the input file for reading */
-        File file = File.new_for_path ( input_file_name );
-        string input_file_basename = file.get_basename( );
-        FileInputStream @is = file.read( );
-
-        /* Get the size of the input file */
-        FileInfo file_info = file.query_info( "*", FileQueryInfoFlags.NONE );
-        uint64 file_size = file_info.get_size( );
-
-        /* Send the server the length of the input file */
-        string data = "%c%s dfA000%s\n".printf( 0x03, file_size.to_string( ), GLib.Environment.get_host_name( ) );
-        socket.send( data.data );
-        stdout.write( data.data );
-
-        /* Receive answer ( 0 if there wasn't an error ) */
-        uint8 receive_buffer[ 1 ];
-        size_t len = socket.receive( receive_buffer );
-        if( len != 0 )
+        stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
+        if( receive_buffer[ 0 ] != 0 )
         {
-          stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
-          if( receive_buffer[ 0 ] != 0 )
-          {
-            stderr.printf( "Printer reported an error (%d)!", receive_buffer[ 0 ] );
-            return false;
-          }
-        }
-
-        /* Send the server the input file */
-        size_t size = (size_t)max_size;
-        uint64 position = 0;
-
-        uint8[ ] file_buffer = new uint8[ max_size ];
-
-        stdout.printf( "Last tranmit:\n" );
-        while( size == max_size )
-        {
-          file_buffer = new uint8[ max_size ];
-          size = @is.read( file_buffer );
-
-          /* Ende of file => end of transmit */
-          if( size < max_size )
-          {
-            file_buffer[ size ]=0;
-            size++;
-          }
-          socket.send( file_buffer[ 0 : size ] );
-
-          position += size;
-
-          float prozent = (float)position / file_size * 100;
-          stdout.printf( "Send file part: Position=%llu, Size=%s (%2.2f%%)\r",position ,size.to_string( "%5d" ), prozent);
-
-          
-        }
-        stdout.printf( "\n" );
-
-        /* Receive answer ( 0 if there wasn't an error ) */
-        len = socket.receive( receive_buffer );
-        if( len != 0 )
-        {
-          stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
-          if( receive_buffer[ 0 ] != 0 )
-          {
-            stderr.printf( "Printer reported an error (%d)!", receive_buffer[ 0 ] );
-            return false;
-          }
+          throw new LprError.PRINTER_ERROR( "Printer reported an error (" + receive_buffer[ 0 ].to_string( "%d" ) + ")!" );
         }
       }
-      catch( Error e )
+
+      /*
+       * Send the server the input file
+       * size of one transmit
+       */
+      size_t size = (size_t)max_size;
+
+      /* position of the file */
+      uint64 position = 0;
+
+      /* file_buffer is a part of the input_file */
+      uint8[ ] file_buffer = new uint8[ max_size ];
+
+      stdout.printf( "Last tranmit:\n" );
+      while( size == max_size )
       {
-        stderr.printf( "Failed to send File!: %s", e.message );
-        return false;
+        file_buffer = new uint8[ max_size ];
+        size = @is.read( file_buffer );
+
+        /* Ende of file => end of transmit */
+        if( size < max_size )
+        {
+          file_buffer[ size ] = 0;
+          size ++;
+        }
+        socket.send( file_buffer[ 0 : size ] );
+
+        position += size;
+
+        float prozent = (float)position / file_size * 100;
+        stdout.printf( "Send file part: Position=%llu, Size=%s (%2.2f%%)\r",position ,size.to_string( "%5d" ), prozent );
+
+        
       }
-      return true;
+      stdout.printf( "\n" );
+
+      /* Receive answer ( 0 if there wasn't an error ) */
+      len = socket.receive( receive_buffer );
+      if( len != 0 )
+      {
+        stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
+        if( receive_buffer[ 0 ] != 0 )
+        {
+          throw new LprError.PRINTER_ERROR( "Printer reported an error (" + receive_buffer[ 0 ].to_string( "%d" ) + ")!" );
+        }
+      }
     }
 
     /**
      * Close the connection to the remote printer
-     * @retrun 0 if there wasn't an error.
      */
-    public bool close( )
+    public void close( ) throws LprError, Error
     {
-      try
-      {
-        socket.close( );
-      }
-      catch( Error e )
-      {
-        stderr.printf( "Failed to close Connection!: %s", e.message );
-        return false;
-      }
-      return true;
+      socket.close( );
     }
   }
 }

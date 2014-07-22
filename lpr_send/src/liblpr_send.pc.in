@@ -3,7 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libpslib
+Name: liblprsend
 Description: A library to read, analyze and write PostScript files.
 Version: @PSLIB_VERSION@
 Libs: -L${libdir} -l@PSLIB_NAME@

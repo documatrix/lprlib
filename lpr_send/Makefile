@@ -26,7 +26,7 @@ testdir: build
 
 test: testdir
 	cd build/tests && gtester ./test_lpr_send -k -o ../testdir/ergebnis.xml || exit 0
-#	cd build && ../../../dm_vala_libraries/trv/bin/trv ${TRVPARAM} -i testdir/ergebnis.xml
+	cd build && ../../../dm_vala_libraries/trv/bin/trv ${TRVPARAM} -i testdir/ergebnis.xml
 
 test_quiet: test
 test_detail: test
