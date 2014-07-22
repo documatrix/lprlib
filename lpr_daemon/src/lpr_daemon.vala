@@ -6,7 +6,7 @@ namespace LprDaemon
   {
 
     /* All connections */
-    private Connection[ ] con;
+    private Connection[ ] connections;
 
     /**
      * Sets the lpr_deamon
@@ -15,12 +15,13 @@ namespace LprDaemon
      */
     public Server( uint16 port = 515 , string? ip_address = null )
     {
+      /* IP-Address */
       InetAddress address = new InetAddress.loopback( SocketFamily.IPV4 );
 
       if( ip_address == null )
       {
-        var resolver = Resolver.get_default( );
-        var addresses = resolver.lookup_by_name( "linux-88qt" , null );
+        Resolver resolver = Resolver.get_default( );
+        List<InetAddress*> addresses = resolver.lookup_by_name( "linux-88qt" , null );
         address = addresses.nth_data ( 0 );
         stdout.printf( "\n\nIhre IP-Adresse: %s\n", address.to_string( ) );
       }
@@ -29,10 +30,13 @@ namespace LprDaemon
         address = new InetAddress.from_string( ip_address );
       }
 
+      /* Socket Address of the daemon ( ip-address and port ) */
       InetSocketAddress inetaddress = new InetSocketAddress( address, port );
 
+      /* The socket from the daemon */
       Socket socket = new Socket( SocketFamily.IPV4, SocketType.STREAM, SocketProtocol.TCP );
       assert ( socket != null );
+
       try
       {
         socket.bind ( inetaddress, true );
@@ -41,6 +45,7 @@ namespace LprDaemon
       {
         stdout.printf( "\n\nError: %s \n\n", e.message );
       }
+
       stdout.printf( "Set listen_backlog\n" );
       socket.set_listen_backlog( 10 );
       socket.listen( );
@@ -48,8 +53,8 @@ namespace LprDaemon
     }
 
     /**
-     * This method listen to the socekt for new connections
-     * @param socket the socked of the server
+     * This method listen to the socket for a new connections
+     * @param socket the socket of the daemon
      */
     public void listen( Socket socket )
     {
@@ -60,8 +65,7 @@ namespace LprDaemon
           {
             stdout.printf( "Waiting for new Connection....\n" );
             Socket connection_socket = socket.accept( );
-            Connection test = new Connection( con.length + 1, connection_socket );
-            con += test;
+            connections += new Connection( connections.length + 1, connection_socket );
           }
         });
       #else
@@ -73,8 +77,7 @@ namespace LprDaemon
             {
               stdout.printf( "Waiting for new Connection....\n" );
               Socket connection_socket = socket.accept( );
-              Connection test = new Connection( con.length + 1, connection_socket );
-              con += test;
+              connections += new Connection( connections.length + 1, connection_socket );
             }
           }, true );
         }
@@ -91,43 +94,43 @@ namespace LprDaemon
      */
     public Connection[ ] get_connections( )
     {
-      return con;
+      return connections;
     }
 
     /**
-     * This delete a connection
+     * This method delete a connection
      * @param connection The number of the connection which should be deleted. 0 is the first connection.
      */
     public void del_connection( uint64 connection )
     {
-      Connection[ ] buffer_conections = con;
-      con = null;
-      for( int i = 0; i < con.length; i ++ )
+      Connection[ ] buffer_connections = connections;
+      connections = null;
+      for( int i = 0; i < connections.length; i ++ )
       {
         if( i != connection )
         {
-          con += buffer_conections[ i ];
+          connections += buffer_connections[ i ];
         }
       }
     }
   }
 
   /**
-   * This class includes all methods to read a PS-File
-   * It adds the pages and gets the position of the areas
+   * This class includes all methods to interpret the data.
+   * It write a output file and set variables.
    */
   public class Connection : GLib.Object
   {
-    /* in begin */
+    /* start to read data */
     public static const int16 BEGIN = 0;
 
-    /* in FILEDATA right now */
+    /* in filedata - block right now */
     public static const int16 FILEDATA = 2;
 
-    /* in DATABLOCK-area right now */
+    /* in datablock-block right now */
     public static const int16 DATABLOCK = 3;
 
-    /* end of the data right now */
+    /* end of the data */
     public static const int16 END = 4;
 
     /* error */
@@ -136,7 +139,7 @@ namespace LprDaemon
     /* buffer uint8 array */
     private uint8[] buffer_string;
 
-    /* the aktuell filesize */
+    /* the aktuell filesize ( it shows how many chars are left )*/
     private int64 temp_filesize = 0;
 
     /* connection ID */
@@ -157,7 +160,7 @@ namespace LprDaemon
     /* Job name */
     public string job_name = null;
 
-    /* Job name */
+    /* the size of the buffer */
     public int64 buffer_size;
 
     /* Title */
@@ -182,8 +185,8 @@ namespace LprDaemon
     public string print_file_with_pr = null;
 
     /**
-     * Sets the connection
-     * @param port the socked
+     * This method sets the connection
+     * @param socket the socket of the connection
      * @param buffer_size the buffer length, if buffer_size isn't set it's 8192
      */
     public Connection( int64 id, Socket socket, int64 buffer_size = 8192 )
@@ -206,7 +209,7 @@ namespace LprDaemon
     }
 
     /**
-     * This method runs and read the data from the client
+     * This method read the data from the client
      */
     public void* run_connection( )
     {
@@ -217,16 +220,16 @@ namespace LprDaemon
         uint8[ ] buffer = new uint8[ buffer_size ];
         ssize_t len = 0;
 
-          try
-          {
-            len = connection.receive ( buffer );
-          }
-          catch( Error e )
-          {
-            stdout.printf( "Reading Buffer Faild: %s\n", e.message );
-            this.status = ERROR;
-            break;
-          }
+        try
+        {
+          len = connection.receive ( buffer );
+        }
+        catch( Error e )
+        {
+          stdout.printf( "Reading Buffer Faild: %s\n", e.message );
+          this.status = ERROR;
+          break;
+        }
 
         if( len == 0 )
         {
@@ -342,7 +345,7 @@ namespace LprDaemon
     }
 
     /**
-     * This method interprete the data and set the variables
+     * This method interpret the data and set the variables
      * @param data The data from the client
      * @param len The length of data
      */
