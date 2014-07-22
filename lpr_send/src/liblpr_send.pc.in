@@ -4,8 +4,8 @@ libdir=@libdir@
 includedir=@includedir@
 
 Name: liblprsend
-Description: A library to read, analyze and write PostScript files.
-Version: @PSLIB_VERSION@
-Libs: -L${libdir} -l@PSLIB_NAME@
+Description: A library to send files to the Remote Printer.
+Version: @LPR_SEND_VERSION@
+Libs: -L${libdir} -l@LPR_SEND_NAME@
 Libs.private: @LIBS@
-Cflags: -I${includedir}/@PSLIB_NAME@/
+Cflags: -I${includedir}/@LPR_SEND_NAME@/
