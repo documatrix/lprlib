@@ -4,13 +4,13 @@ foreach(file_data ${list_data})
 		install(DIRECTORY
 			${file_data}
 		DESTINATION
-			share/doc/pslib
+			share/doc/lpr_daemon
 		)
 	ELSE()
 		install(FILES
 			${file_data}
 		DESTINATION
-			share/doc/pslib
+			share/doc/lpr_daemon
 		)
 	ENDIF()
 endforeach()

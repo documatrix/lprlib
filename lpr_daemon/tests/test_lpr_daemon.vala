@@ -25,7 +25,7 @@ public class TestLprDaemon
   }
 
    /**
-   * This testcase tests if the PSLib detects a start of a document correctly
+   * his test case test the constructor of the server
    */
   public static void test_server_n( )
   {
@@ -43,7 +43,7 @@ public class TestLprDaemon
   }
 
   /**
-   * This is the default setup method for the PSLib tests.
+   * This is the default setup method for the LPR-Daemon tests.
    * It will setup a DocuMatrix.Logger object and then invoke the default_setup method from Testlib.
    */
   public static void default_setup( )
@@ -55,7 +55,7 @@ public class TestLprDaemon
   }
 
   /**
-   * This is the default teardown method for the PSLib tests.
+   * This is the default teardown method for the LPR-Daemon tests.
    * It will stop the DocuMatrix.Logger and then invoke the default_teardown method from Testlib.
    */
   public static void default_teardown( )

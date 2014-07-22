@@ -355,9 +355,11 @@ namespace LprDaemon
       switch ( first_symbol ) {
 
         /* Daemon commands */
+        /* 01 - Print any waiting jobs */
         case 0x1:
           break;
 
+        /* 02 - Receive a printer job */
         case 0x2:
           buffer_string = { };
           for( int64 i = 1; i < len ; i ++ )
@@ -368,6 +370,7 @@ namespace LprDaemon
           stdout.printf( "\nPRQ - Name: %s\n", (string)buffer_string );
           break;
 
+        /* 03 - Send queue state (short) */
         case 0x3:
           this.status = DATABLOCK;
           buffer_string = { };
@@ -390,13 +393,17 @@ namespace LprDaemon
           stdout.printf( "New Data File \n" );
           break;
 
+        /* 04 - Send queue state (long) */
         case 0x4:
           break;
 
+        /* 05 - Remove jobs */
         case 0x5:
           break;
 
         /* Control file lines */
+
+        /* C - Class for banner page */
         case 'C':
           buffer_string = { };
           for( int64 i = 1; data[ i ] != ' '; i ++ )
@@ -408,6 +415,7 @@ namespace LprDaemon
           stdout.printf( "Class name: %s\n", class_name );
           break;
 
+        /* H - Host name */
         case 'H':
           buffer_string = { };
           for( int64 i = 1; i < len ; i ++ )
@@ -420,6 +428,7 @@ namespace LprDaemon
           stdout.printf( "\nHostname: %s\n", hostname );
           break;
 
+        /* I - Indent Printing */
         case 'I':
           buffer_string = { };
           for( int64 i = 1; data[ i ] != ' '; i ++ )
@@ -431,6 +440,7 @@ namespace LprDaemon
           stdout.printf( "indenting_count: %llu\n", indenting_count );
           break;
 
+        /* J - Job name for banner page */
         case 'J':
           buffer_string = { };
           for( int64 i = 1; i < len ; i ++ )
@@ -443,12 +453,15 @@ namespace LprDaemon
           stdout.printf( "\nJob name: %s\n", job_name );
           break;
 
+        /* L - Print banner page */
         case 'L':
           break;
 
+        /* M - Mail When Printed */
         case 'M':
           break;
 
+        /* N - Name of source file */
         case 'N':
           buffer_string = { };
           for( int64 i = 1; i < len ; i ++ )
@@ -461,6 +474,7 @@ namespace LprDaemon
           stdout.printf( "\nFilename: %s ( %d )\n", filename, filename.length );
           break;
 
+        /* P - User identification */
         case 'P':
           buffer_string = { };
           for( int64 i = 1; i < len ; i ++ )
@@ -473,9 +487,11 @@ namespace LprDaemon
           stdout.printf( "\nUser Identification: %s\n", user_identification );
           break;
 
+        /* S - Symbolic link data */
         case 'S':
           break;
 
+        /* T - Title for pr */
         case 'T':
           buffer_string = { };
           for( int64 i = 1; i < len ; i ++ )
@@ -488,45 +504,59 @@ namespace LprDaemon
           stdout.printf( "\nTitle Text: %s\n", title_text );
           break;
 
+        /* U - Unlink data file */
         case 'U':
           break;
 
+        /* W - Width of output */
         case 'W':
           break;
 
+        /* 1 - troff R font */
         case '1':
           break;
 
+        /* 2 - troff I font */
         case '2':
           break;
 
+        /* 3 - troff B font */
         case '3':
           break;
 
+        /* 4 - troff S font */
         case '4':
           break;
 
+        /* c - Plot CIF file */
         case 'c':
           break;
 
+        /* d - Print DVI file */
         case 'd':
           break;
 
+        /* f - Print formatted file */
         case 'f':
           break;
 
+        /* g - Plot file */
         case 'g':
           break;
 
+        /* l - Print file leaving control characters */
         case 'l':
           break;
 
+        /* n - Print ditroff output file */
         case 'n':
           break;
 
+        /* o - Print Postscript output file */
         case 'o':
           break;
 
+        /* p - Print file with 'pr' format */
         case 'p':
           buffer_string = { };
           for( int64 i = 1; data[ i ] != ' '; i ++ )
@@ -538,12 +568,15 @@ namespace LprDaemon
           stdout.printf( "p: %s\n", print_file_with_pr );
           break;
 
+        /* r - File to print with FORTRAN carriage control */
         case 'r':
           break;
 
+        /* t - Print troff output file */
         case 't':
           break;
 
+        /* v - Print raster file */
         case 'v':
           break;
 
