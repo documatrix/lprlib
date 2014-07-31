@@ -7,24 +7,12 @@ set (DOLLAR "$")
 
 configure_file (${CMAKE_SOURCE_DIR}/src/Config.vala.cmake ${CMAKE_BINARY_DIR}/src/Config.vala)
 add_definitions(-DGETTEXT_PACKAGE=\"${GETTEXT_PACKAGE}\")
+include_directories( ${CMAKE_SOURCE_DIR}/src )
 add_definitions (${DEPS_CFLAGS})
-include_directories( ${CMAKE_SOURCE_DIR}/src ../../../../dmlib/include ../../../../dm_logger/include ../../../../testlib/include )
-link_libraries ( ${DEPS_LIBRARIES} )
-link_libraries ( dm_logger dmlib testlib ${LPR_DAEMON_NAME} )
-link_directories ( ../../../../dmlib/lib ../../../../dm_logger/lib ../../../../testlib/lib )
+link_libraries ( ${DEPS_LIBRARIES} ${LPR_DAEMON_NAME} )
 link_directories ( ${DEPS_LIBRARY_DIRS} )
 find_package (Vala REQUIRED)
 include( UseVala )
-
-set (VALA_PACKAGES ${VALA_PACKAGES} dm_logger)
-set (VALA_PACKAGES ${VALA_PACKAGES} gio-2.0)
-set (VALA_PACKAGES ${VALA_PACKAGES} glib-2.0)
-set (VALA_PACKAGES ${VALA_PACKAGES} gobject-2.0)
-set (VALA_PACKAGES ${VALA_PACKAGES} zlib)
-set (VALA_PACKAGES ${VALA_PACKAGES} dmlib)
-set (VALA_PACKAGES ${VALA_PACKAGES} testlib)
-set (VALA_PACKAGES ${VALA_PACKAGES} posix)
-set (VALA_PACKAGES ${VALA_PACKAGES} magick_wand)
 
 set (TEST_LPR_DAEMON_SOURCES ${TEST_LPR_DAEMON_SOURCES} test_lpr_daemon.vala)
 
@@ -33,7 +21,7 @@ vala_precompile(TEST_LPR_DAEMON_VALA_C
 PACKAGES
   ${VALA_PACKAGES} ${LPR_DAEMON_NAME}
 OPTIONS
-  --thread --vapidir=${CMAKE_SOURCE_DIR}/src --vapidir=../../../../dmlib/include --vapidir=../../../../dm_logger/include --vapidir=../../../../testlib/include
+${VALA_ARGS} --vapidir=${CMAKE_SOURCE_DIR}/src
 CUSTOM_VAPIS
   ${CUSTOM_VAPIS_LIST}
 )

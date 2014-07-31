@@ -8,22 +8,10 @@ set (DOLLAR "$")
 configure_file (${CMAKE_SOURCE_DIR}/src/Config.vala.cmake ${CMAKE_BINARY_DIR}/src/Config.vala)
 add_definitions(-DGETTEXT_PACKAGE=\"${GETTEXT_PACKAGE}\")
 add_definitions (${DEPS_CFLAGS})
-include_directories( ../../../../open_dmlib/include ../../../../dm_logger/include )
 link_libraries ( ${DEPS_LIBRARIES} )
-link_libraries ( dm_logger dmlib )
-link_directories ( ../../../../open_dmlib/lib ../../../../dm_logger/lib )
 link_directories ( ${DEPS_LIBRARY_DIRS} )
 find_package (Vala REQUIRED)
 include( UseVala )
-
-set (VALA_PACKAGES ${VALA_PACKAGES} dm_logger)
-set (VALA_PACKAGES ${VALA_PACKAGES} gio-2.0)
-set (VALA_PACKAGES ${VALA_PACKAGES} glib-2.0)
-set (VALA_PACKAGES ${VALA_PACKAGES} gobject-2.0)
-set (VALA_PACKAGES ${VALA_PACKAGES} zlib)
-set (VALA_PACKAGES ${VALA_PACKAGES} dmlib)
-set (VALA_PACKAGES ${VALA_PACKAGES} posix)
-set (VALA_PACKAGES ${VALA_PACKAGES} magick_wand)
 
 set (LPR_SEND_SOURCES ${LPR_SEND_SOURCES} lpr_send.vala)
 
@@ -38,7 +26,7 @@ CUSTOM_VAPIS
 GENERATE_HEADER
   lpr_send
 OPTIONS
-  --thread --vapidir=../../../../open_dmlib/include --vapidir=../../../../dm_logger/include -g
+  ${VALA_ARGS}
 )
 
 add_library(

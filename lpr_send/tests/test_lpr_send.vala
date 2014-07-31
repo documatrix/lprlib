@@ -131,25 +131,25 @@ public class TestLprSend
 
   /**
    * This is the default setup method for the LprLib tests.
-   * It will setup a DocuMatrix.Logger object and then invoke the default_setup method from Testlib.
+   * It will setup a DMLogger.Logger object and then invoke the default_setup method from Testlib.
    */
   public static void default_setup( )
   {
-    DocuMatrix.log = new DocuMatrix.Logger( null );
-    DocuMatrix.log.set_config( true, "../log/messages.mdb" );
-    DocuMatrix.log.start_threaded( );
+    DMLogger.log = new DMLogger.Logger( null );
+    DMLogger.log.set_config( true, "../log/messages.mdb" );
+    DMLogger.log.start_threaded( );
     Testlib.default_setup( );
   }
 
   /**
    * This is the default teardown method for the LprLib tests.
-   * It will stop the DocuMatrix.Logger and then invoke the default_teardown method from Testlib.
+   * It will stop the DMLogger.Logger and then invoke the default_teardown method from Testlib.
    */
   public static void default_teardown( )
   {
-    if ( DocuMatrix.log != null )
+    if ( DMLogger.log != null )
     {
-      DocuMatrix.log.stop( );
+      DMLogger.log.stop( );
     }
     Testlib.default_teardown( );
   }

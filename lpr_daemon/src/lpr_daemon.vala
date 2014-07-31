@@ -1,4 +1,4 @@
-using DMLib;
+using OpenDMLib;
 
 namespace LprDaemon
 {
@@ -384,11 +384,11 @@ namespace LprDaemon
           temp_filesize = filesize;
           if( filename != null )
           {
-            this.output = DMLib.IO.open( "data/" + filename + "_" + connection_id.to_string( ), "wb" );
+            this.output = OpenDMLib.IO.open( "data/" + filename + "_" + connection_id.to_string( ), "wb" );
           }
           else
           {
-            this.output = DMLib.IO.open( "New_File", "wb" );
+            this.output = OpenDMLib.IO.open( "New_File", "wb" );
           }
           stdout.printf( "New Data File \n" );
           break;
