@@ -149,7 +149,7 @@ namespace LprLib
 
     /**
      * Send the configruation to the remote printer
-     * @param queue Directory prefix for the output file
+     * @param queue Print queue on the specified print server
      */
     public void send_configuration( string queue ) throws LprError, Error
     {
