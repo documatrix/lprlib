@@ -1,8 +1,8 @@
 using OpenDMLib;
 
-namespace LprDaemon
+namespace LprLib
 {
-  public class Server : GLib.Object
+  public class LprDaemon : GLib.Object
   {
 
     /* All connections */
@@ -13,7 +13,7 @@ namespace LprDaemon
      * @param port the port of the deamon if this is not set it's 515
      * @param ip_address the ip_address of the deamon if this is not set it's the ip address of the server
      */
-    public Server( uint16 port = 515 , string? ip_address = null )
+    public LprDaemon( uint16 port = 515 , string? ip_address = null )
     {
       /* IP-Address */
       InetAddress address = new InetAddress.loopback( SocketFamily.IPV4 );
@@ -23,7 +23,7 @@ namespace LprDaemon
         Resolver resolver = Resolver.get_default( );
         List<InetAddress*> addresses = resolver.lookup_by_name( "linux-88qt" , null );
         address = addresses.nth_data ( 0 );
-        stdout.printf( "\n\nIhre IP-Adresse: %s\n", address.to_string( ) );
+        stdout.printf( "\n\nYour IP-Adresse: %s\n", address.to_string( ) );
       }
       else
       {
@@ -65,7 +65,7 @@ namespace LprDaemon
           {
             stdout.printf( "Waiting for new Connection....\n" );
             Socket connection_socket = socket.accept( );
-            connections += new Connection( connections.length + 1, connection_socket );
+            connections += new Connection( connection_socket );
           }
         });
       #else
@@ -77,7 +77,7 @@ namespace LprDaemon
             {
               stdout.printf( "Waiting for new Connection....\n" );
               Socket connection_socket = socket.accept( );
-              connections += new Connection( connections.length + 1, connection_socket );
+              connections += new Connection( connection_socket );
             }
           }, true );
         }
@@ -142,9 +142,6 @@ namespace LprDaemon
     /* the aktuell filesize ( it shows how many chars are left )*/
     private int64 temp_filesize = 0;
 
-    /* connection ID */
-    public int64 connection_id;
-
     /* connection */
     public Socket connection;
 
@@ -153,6 +150,9 @@ namespace LprDaemon
 
     /* Filename */
     public string filename = null;
+
+    /* PRQ - Name */
+    public string prq_name = null;
 
     /* User Identification */
     public string user_identification = null;
@@ -181,7 +181,7 @@ namespace LprDaemon
     /* Status */
     public int16 status = 0;
 
-    /* Status */
+    /* Print file with pr */
     public string print_file_with_pr = null;
 
     /**
@@ -189,9 +189,8 @@ namespace LprDaemon
      * @param socket the socket of the connection
      * @param buffer_size the buffer length, if buffer_size isn't set it's 8192
      */
-    public Connection( int64 id, Socket socket, int64 buffer_size = 8192 )
+    public Connection( Socket socket, int64 buffer_size = 8192 )
     {
-      this.connection_id = id;
       this.connection = socket;
       this.buffer_size = buffer_size;
       #if GLIB_2_32
@@ -215,7 +214,7 @@ namespace LprDaemon
     {
       bool in_data;
       this.status = FILEDATA;
-      while( true )
+      while( this.status!= ERROR )
       {
         uint8[ ] buffer = new uint8[ buffer_size ];
         ssize_t len = 0;
@@ -226,20 +225,27 @@ namespace LprDaemon
         }
         catch( Error e )
         {
-          stdout.printf( "Reading Buffer Faild: %s\n", e.message );
+          stdout.printf( "\nReading Buffer Faild: %s\n", e.message );
           this.status = ERROR;
           break;
         }
 
         if( len == 0 )
         {
-          stdout.printf( "Senden wurde erfolgreich beendet!\n" );
-          this.status = END;
+          if( this.status < END )
+          {
+            this.status == ERROR;
+          }
+          else
+          {
+            stdout.printf( "\nFile was received!\n" );
+          }
           break;
         }
+
         if( len == -1 )
         {
-          stdout.printf( "Senden fehlgeschlagen!\n" );
+          stdout.printf( "\nFile could not be received!\n" );
           this.status = ERROR;
           break;
         }
@@ -257,7 +263,11 @@ namespace LprDaemon
 
         if( this.connection.is_closed( ) )
         {
-          stdout.printf( "Verbindung wurde beendet.\n" );
+          stdout.printf( "\nConnection is closed.\n" );
+          if( this.status < END )
+          {
+            this.status == ERROR;
+          }
           break;
         }
         else
@@ -268,29 +278,10 @@ namespace LprDaemon
             {
               this.connection.send( { 0 } );
             }
-            else
-            {
-              float pro;
-              pro = (float)( 100.0 - ( temp_filesize * 100.0 ) / (float)filesize );
-              stdout.printf( "<" );
-              for( int i = 0; i < 50; i ++ )
-              {
-                if( (int)( pro / 2 ) < i )
-                {
-                  stdout.printf( " " );
-                }
-                else
-                {
-                  stdout.printf( "-" );
-                }
-              }
-              stdout.printf( "> %f %\r", pro );
-            }
-
           }
           catch( Error e )
           {
-            stdout.printf( "Sending Faild: %s\n", e.message );
+            stdout.printf( "\nSending Faild: %s\n", e.message );
             this.status = ERROR;
           }
         }
@@ -332,16 +323,46 @@ namespace LprDaemon
       {
         this.temp_filesize = this.temp_filesize - len;
         test = data[ 0 : len ];
-        this.output.write( test );
+        try
+        {
+          this.output.write( test );
+        }
+        catch( Error e )
+        {
+          stdout.printf( "\nWrite faild: %s\n", e.message );
+        }
       }
       else
       {
         test = data[ 0 : this.temp_filesize ];
-        this.output.write( test );
+        try
+        {
+          this.output.write( test );
+        }
+        catch( Error e )
+        {
+          stdout.printf( "\nWrite faild: %s\n", e.message );
+        }
         this.output.flush( );
+        this.temp_filesize = this.temp_filesize - len;
         this.status = END;
-        stdout.printf( "\n\n\nENDE\n\n\n" );
       }
+
+      float pro;
+      pro = (float)( 100.0 - ( temp_filesize * 100.0 ) / (float)filesize );
+      stdout.printf( "<" );
+      for( int i = 0; i < 50; i ++ )
+      {
+        if( (int)( pro / 2 ) < i )
+        {
+          stdout.printf( " " );
+        }
+        else
+        {
+          stdout.printf( "-" );
+        }
+      }
+      stdout.printf( "> %f %\r", pro );
     }
 
     /**
@@ -359,15 +380,29 @@ namespace LprDaemon
         case 0x1:
           break;
 
-        /* 02 - Receive a printer job */
+
         case 0x2:
           buffer_string = { };
+          bool is_prq_name = true;
           for( int64 i = 1; i < len ; i ++ )
           {
+            if( data[ i ] == ' ' )
+            {
+              is_prq_name = false;
+            }
             buffer_string += data[ i ];
           }
           buffer_string += 0;
-          stdout.printf( "\nPRQ - Name: %s\n", (string)buffer_string );
+          if( is_prq_name )
+          {
+            /* Receive a printer job */
+            this.prq_name = (string)buffer_string;
+            stdout.printf( "\nPRQ - Name: %s\n", this.prq_name );
+          }
+          else
+          {
+            /* Receive control file */
+          }
           break;
 
         /* 03 - Send queue state (short) */
@@ -384,11 +419,12 @@ namespace LprDaemon
           temp_filesize = filesize;
           if( filename != null )
           {
-            this.output = OpenDMLib.IO.open( "data/" + filename + "_" + connection_id.to_string( ), "wb" );
+            this.output = OpenDMLib.IO.open( filename, "wb" );
           }
           else
           {
-            this.output = OpenDMLib.IO.open( "New_File", "wb" );
+            stdout.printf( "\nNo Filename!");
+            this.output = DMLib.IO.open( "New_File", "wb" );
           }
           stdout.printf( "New Data File \n" );
           break;
@@ -405,26 +441,13 @@ namespace LprDaemon
 
         /* C - Class for banner page */
         case 'C':
-          buffer_string = { };
-          for( int64 i = 1; data[ i ] != ' '; i ++ )
-          {
-            buffer_string += data[ i ];
-          }
-          buffer_string += 0;
-          class_name = (string)buffer_string;
+          class_name = (string)data[ 1:len ];
           stdout.printf( "Class name: %s\n", class_name );
           break;
 
         /* H - Host name */
         case 'H':
-          buffer_string = { };
-          for( int64 i = 1; i < len ; i ++ )
-          {
-            buffer_string += data[ i ];
-          }
-
-          buffer_string += 0;
-          hostname = (string)buffer_string;
+          hostname = (string)data[ 1:len ];
           stdout.printf( "\nHostname: %s\n", hostname );
           break;
 
@@ -442,14 +465,7 @@ namespace LprDaemon
 
         /* J - Job name for banner page */
         case 'J':
-          buffer_string = { };
-          for( int64 i = 1; i < len ; i ++ )
-          {
-            buffer_string += data[ i ];
-          }
-
-          buffer_string += 0;
-          job_name = (string)buffer_string;
+          job_name = (string)data[ 1:len ];
           stdout.printf( "\nJob name: %s\n", job_name );
           break;
 
@@ -463,27 +479,13 @@ namespace LprDaemon
 
         /* N - Name of source file */
         case 'N':
-          buffer_string = { };
-          for( int64 i = 1; i < len ; i ++ )
-          {
-            buffer_string += data[ i ];
-          }
-
-          buffer_string += 0;
-          filename = (string)buffer_string;
-          stdout.printf( "\nFilename: %s ( %d )\n", filename, filename.length );
+          filename = (string)data[ 1:len ];
+          stdout.printf( "\nFilename: %s\n", filename );
           break;
 
         /* P - User identification */
         case 'P':
-          buffer_string = { };
-          for( int64 i = 1; i < len ; i ++ )
-          {
-            buffer_string += data[ i ];
-          }
-
-          buffer_string += 0;
-          user_identification = (string)buffer_string;
+          user_identification = (string)data[ 1:len ];
           stdout.printf( "\nUser Identification: %s\n", user_identification );
           break;
 
@@ -493,14 +495,7 @@ namespace LprDaemon
 
         /* T - Title for pr */
         case 'T':
-          buffer_string = { };
-          for( int64 i = 1; i < len ; i ++ )
-          {
-            buffer_string += data[ i ];
-          }
-
-          buffer_string += 0;
-          title_text= (string)buffer_string;
+          title_text= (string)data[ 1:len ];
           stdout.printf( "\nTitle Text: %s\n", title_text );
           break;
 
