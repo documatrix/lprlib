@@ -36,7 +36,7 @@ namespace LprLib
     /**
      * The max size of one transmit
      */
-    uint64 max_size = 16*1024;
+    public uint64 max_size = 16*1024;
 
     /**
      * The configuration for the remote printer
@@ -56,57 +56,57 @@ namespace LprLib
       File file = File.new_for_path( file_path );
 
       /* Set the input_file_name */
-      input_file_name = file_path;
+      this.input_file_name = file_path;
 
       /* Set the basename of the for the config */
       string input_file_basename = file.get_basename( );
 
       /* Initializes the config */
-      config = new HashTable<char?, string?> ( str_hash, str_equal );
+      this.config = new HashTable<char?, string?> ( str_hash, str_equal );
 
       /* Host name */
-      config.insert( 'H', GLib.Environment.get_host_name( ) );
+      this.config.insert( 'H', GLib.Environment.get_host_name( ) );
 
       /* Name of source file */
-      config.insert( 'N', input_file_basename );
+      this.config.insert( 'N', input_file_basename );
 
       /* User identification */
-      config.insert( 'P', GLib.Environment.get_user_name( ) );
+      this.config.insert( 'P', GLib.Environment.get_user_name( ) );
 
       /* Print file with 'pr' format */
-      config.insert( 'p', "dfA000" + GLib.Environment.get_host_name( ) );
+      this.config.insert( 'p', "dfA000" + GLib.Environment.get_host_name( ) );
 
       /*
        * Further configuration:
        *
-       * config.insert( 'C', null ); // Class for banner page
-       * config.insert( 'I', null ); // Indent Printing
-       * config.insert( 'J', null ); // Job name for banner page
-       * config.insert( 'L', null ); // Print banner page
-       * config.insert( 'M', null ); // Mail When Printed
-       * config.insert( 'S', null ); // Symbolic link data
-       * config.insert( 'T', null ); // Title for pr
-       * config.insert( 'U', null ); // Unlink data file
-       * config.insert( 'W', null ); // Width of output
-       * config.insert( '1', null ); // troff R font
-       * config.insert( '2', null ); // troff I font
-       * config.insert( '3', null ); // troff B font
-       * config.insert( '4', null ); // troff S font
-       * config.insert( 'c', null ); // Plot CIF file
-       * config.insert( 'd', null ); // Print DVI file
-       * config.insert( 'f', null ); // Print formatted file
-       * config.insert( 'g', null ); // Plot file
-       * config.insert( 'k', null ); // Reserved for use by Kerberized LPR clients and servers
-       * config.insert( 'l', null ); // Print file leaving control characters
-       * config.insert( 'n', null ); // Print ditroff output file
-       * config.insert( 'o', null ); // Print Postscript output file
-       * config.insert( 'r', null ); // File to print with FORTRAN carriage control
-       * config.insert( 't', null ); // Print troff output file
-       * config.insert( 'v', null ); // Print raster file
+       * this.config.insert( 'C', null );  // Class for banner page
+       * this.config.insert( 'I', null );  // Indent Printing
+       * this.config.insert( 'J', null );  // Job name for banner page
+       * this.config.insert( 'L', null );  // Print banner page
+       * this.config.insert( 'M', null );  // Mail When Printed
+       * this.config.insert( 'S', null );  // Symbolic link data
+       * this.config.insert( 'T', null );  // Title for pr
+       * this.config.insert( 'U', null );  // Unlink data file
+       * this.config.insert( 'W', null );  // Width of output
+       * this.config.insert( '1', null );  // troff R font
+       * this.config.insert( '2', null );  // troff I font
+       * this.config.insert( '3', null );  // troff B font
+       * this.config.insert( '4', null );  // troff S font
+       * this.config.insert( 'c', null );  // Plot CIF file
+       * this.config.insert( 'd', null );  // Print DVI file
+       * this.config.insert( 'f', null );  // Print formatted file
+       * this.config.insert( 'g', null );  // Plot file
+       * this.config.insert( 'k', null );  // Reserved for use by Kerberized LPR clients and servers
+       * this.config.insert( 'l', null );  // Print file leaving control characters
+       * this.config.insert( 'n', null );  // Print ditroff output file
+       * this.config.insert( 'o', null );  // Print Postscript output file
+       * this.config.insert( 'r', null );  // File to print with FORTRAN carriage control
+       * this.config.insert( 't', null );  // Print troff output file
+       * this.config.insert( 'v', null );  // Print raster file
        */
 
       /* Initializes the socket connection */
-      socket = new Socket( SocketFamily.IPV4, SocketType.STREAM, SocketProtocol.TCP );
+      this.socket = new Socket( SocketFamily.IPV4, SocketType.STREAM, SocketProtocol.TCP );
 
       /* Set the IP-Address from the remote Server */
       InetAddress address = get_ip( hostname );
@@ -114,7 +114,7 @@ namespace LprLib
       {
         /* Connect to Server! */
         InetSocketAddress inetaddress = new InetSocketAddress ( address, port );
-        socket.connect( inetaddress );
+        this.socket.connect( inetaddress );
       }
       else
       {
@@ -159,8 +159,8 @@ namespace LprLib
        * A config transmit must have a new line command at the ending
        */
       string config_transmit = "%c".printf( 0x02 ) + queue + "\n";
-      socket.send( config_transmit.data );
-      stdout.printf( "\n\nStart Config: " + config_transmit );
+      this.socket.send( config_transmit.data );
+      stdout.printf( "Start Config: " + config_transmit );
 
 
       /* receive_buffer is the buffer for the answer of the remote Server */
@@ -170,21 +170,21 @@ namespace LprLib
        * Receive answer ( 0 if there wasn't an error ) 
        * len is length of the answer, maximum length is the receive_buffer size
        */
-      size_t len = socket.receive( receive_buffer );
+      size_t len = this.socket.receive( receive_buffer );
       if( len != 0 )
       {
         stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
         if( receive_buffer[ 0 ] != 0 )
         {
-          throw new LprError.PRINTER_ERROR( "Printer reported an error (" + receive_buffer[ 0 ].to_string( "%d" ) + ")!" );
+          throw new LprError.PRINTER_ERROR( "Printer reported an error ( " + receive_buffer[ 0 ].to_string( "%d" ) + " )!" );
         }
       }
 
       /* Create config data string */
       string config_data = "";
-      if( config != null )
+      if( this.config != null )
       {
-        config.foreach( ( c_key, c_value ) => 
+        this.config.foreach( ( c_key, c_value ) =>
         {
           if( c_value != null )
           {
@@ -199,17 +199,17 @@ namespace LprLib
 
       /* Send the server the length of the configuration */
       string config_info = "%c%s cfA000%s\n".printf( 0x02, config_data.length.to_string( ), GLib.Environment.get_host_name( ) );
-      socket.send( config_info.data );
+      this.socket.send( config_info.data );
       stdout.printf( "Config info: " + config_info );
 
       /* Receive answer ( 0 if there wasn't an error ) */
-      len = socket.receive( receive_buffer );
+      len = this.socket.receive( receive_buffer );
       if( len != 0 )
       {
         stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
         if( receive_buffer[ 0 ] != 0 )
         {
-          throw new LprError.PRINTER_ERROR( "Printer reported an error (" + receive_buffer[ 0 ].to_string( "%d" ) + ")!" );
+          throw new LprError.PRINTER_ERROR( "Printer reported an error ( " + receive_buffer[ 0 ].to_string( "%d" ) + " )!" );
         }
       }
 
@@ -219,17 +219,17 @@ namespace LprLib
        */
       uint8[ ] send_buffer = config_data.data;
       send_buffer += 0;
-      socket.send( send_buffer );
+      this.socket.send( send_buffer );
       stdout.printf( "Config: \n" + config_data );
 
       /* Receive answer ( 0 if there wasn't an error ) */
-      len = socket.receive( receive_buffer );
+      len = this.socket.receive( receive_buffer );
       if( len != 0 )
       {
         stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
         if( receive_buffer[ 0 ] != 0 )
         {
-          throw new LprError.PRINTER_ERROR( "Printer reported an error (" + receive_buffer[ 0 ].to_string( "%d" ) + ")!" );
+          throw new LprError.PRINTER_ERROR( "Printer reported an error ( " + receive_buffer[ 0 ].to_string( "%d" ) + " )!" );
         }
       }
     }
@@ -241,7 +241,7 @@ namespace LprLib
     public void send_file( ) throws LprError, Error
     {
       /* Prepare the input file for reading */
-      File file = File.new_for_path ( input_file_name );
+      File file = File.new_for_path ( this.input_file_name );
       FileInputStream @is = file.read( );
 
       /* Get the size of the input file */
@@ -250,7 +250,7 @@ namespace LprLib
 
       /* Send the server the length of the input file */
       string data_info = "%c%s dfA000%s\n".printf( 0x03, file_size.to_string( ), GLib.Environment.get_host_name( ) );
-      socket.send( data_info.data );
+      this.socket.send( data_info.data );
       stdout.printf( "\nData info: " + data_info );
 
       /* receive_buffer is the buffer for the answer of the remote Server */
@@ -260,13 +260,13 @@ namespace LprLib
        * Receive answer ( 0 if there wasn't an error ) 
        * len is length of the answer, maximum length is the receive_buffer size
        */
-      size_t len = socket.receive( receive_buffer );
+      size_t len = this.socket.receive( receive_buffer );
       if( len != 0 )
       {
         stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
         if( receive_buffer[ 0 ] != 0 )
         {
-          throw new LprError.PRINTER_ERROR( "Printer reported an error (" + receive_buffer[ 0 ].to_string( "%d" ) + ")!" );
+          throw new LprError.PRINTER_ERROR( "Printer reported an error ( " + receive_buffer[ 0 ].to_string( "%d" ) + " )!" );
         }
       }
 
@@ -274,45 +274,43 @@ namespace LprLib
        * Send the server the input file
        * size of one transmit
        */
-      size_t size = (size_t)max_size;
+      size_t size = (size_t)this.max_size;
 
       /* position of the file */
       uint64 position = 0;
 
       /* file_buffer is a part of the input_file */
-      uint8[ ] file_buffer = new uint8[ max_size ];
+      uint8[ ] file_buffer = new uint8[ this.max_size ];
 
-      stdout.printf( "Last tranmit:\n" );
-      while( size == max_size )
+      stdout.printf( "Last transmit:\n" );
+      while( size == this.max_size )
       {
-        file_buffer = new uint8[ max_size ];
+        file_buffer = new uint8[ this.max_size ];
         size = @is.read( file_buffer );
 
         /* Ende of file => end of transmit */
-        if( size < max_size )
+        if( size < this.max_size )
         {
           file_buffer[ size ] = 0;
           size ++;
         }
-        socket.send( file_buffer[ 0 : size ] );
+        this.socket.send( file_buffer[ 0 : size ] );
 
         position += size;
 
-        float prozent = (float)position / file_size * 100;
-        stdout.printf( "Send file part: Position=%llu, Size=%s (%2.2f%%)\r",position ,size.to_string( "%5d" ), prozent );
-
-        
+        float prozent = (float)position / ( file_size + 1 ) * 100;
+        stdout.printf( "Send file part: Position=%llu, Size=%s (%2.2f%%)\r",position, size.to_string( "%5d" ), prozent );
       }
       stdout.printf( "\n" );
 
       /* Receive answer ( 0 if there wasn't an error ) */
-      len = socket.receive( receive_buffer );
+      len = this.socket.receive( receive_buffer );
       if( len != 0 )
       {
         stdout.printf( "Empfangen: %d\n", receive_buffer[ 0 ] );
         if( receive_buffer[ 0 ] != 0 )
         {
-          throw new LprError.PRINTER_ERROR( "Printer reported an error (" + receive_buffer[ 0 ].to_string( "%d" ) + ")!" );
+          throw new LprError.PRINTER_ERROR( "Printer reported an error ( " + receive_buffer[ 0 ].to_string( "%d" ) + " )!" );
         }
       }
     }
@@ -322,7 +320,7 @@ namespace LprLib
      */
     public void close( ) throws LprError, Error
     {
-      socket.close( );
+      this.socket.close( );
     }
   }
 }
