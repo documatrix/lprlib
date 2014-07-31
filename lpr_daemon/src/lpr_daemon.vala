@@ -424,7 +424,7 @@ namespace LprLib
           else
           {
             stdout.printf( "\nNo Filename!");
-            this.output = DMLib.IO.open( "New_File", "wb" );
+            this.output =  OpenDMLib.IO.open( "New_File", "wb" );
           }
           stdout.printf( "New Data File \n" );
           break;
