@@ -105,9 +105,25 @@ namespace LprLib
     {
       Connection[ ] buffer_connections = connections;
       connections = null;
-      for( int i = 0; i < connections.length; i ++ )
+      for( int64 i = 0; i < connections.length; i ++ )
       {
         if( i != connection )
+        {
+          connections += buffer_connections[ i ];
+        }
+      }
+    }
+
+    /**
+     * This method delete a all connection with status END or ERROR
+     */
+    public void del_finished_connection( )
+    {
+      Connection[ ] buffer_connections = connections;
+      connections = null;
+      for( int64 i = 0; i < buffer_connections.length; i ++ )
+      {
+        if( buffer_connections[ i ].status != Connection.END && buffer_connections[ i ].status != Connection.ERROR )
         {
           connections += buffer_connections[ i ];
         }
@@ -183,6 +199,9 @@ namespace LprLib
 
     /* Print file with pr */
     public string print_file_with_pr = null;
+
+    /* The File name of the new file */
+    public string save_name = null;
 
     /**
      * This method sets the connection
@@ -344,6 +363,7 @@ namespace LprLib
           stdout.printf( "\nWrite faild: %s\n", e.message );
         }
         this.output.flush( );
+        this.output = null;
         this.temp_filesize = this.temp_filesize - len;
         this.status = END;
       }
@@ -417,15 +437,9 @@ namespace LprLib
           filesize = int64.parse( (string)buffer_string );
           stdout.printf( "Filesize: %d\n", (int)filesize );
           temp_filesize = filesize;
-          if( filename != null )
-          {
-            this.output = OpenDMLib.IO.open( filename, "wb" );
-          }
-          else
-          {
-            stdout.printf( "\nNo Filename!");
-            this.output =  OpenDMLib.IO.open( "New_File", "wb" );
-          }
+          save_name = OpenDMLib.get_temp_file( );
+          this.output = OpenDMLib.IO.open( save_name, "wb" );
+
           stdout.printf( "New Data File \n" );
           break;
 

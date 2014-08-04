@@ -127,7 +127,7 @@ public class TestLprDaemon
 
     connection.handle_data( text.data, 18 );
 
-    FileStream stream = FileStream.open( filename, "rb" );
+    FileStream stream = FileStream.open( connection.save_name, "rb" );
 
     uint8[] filedata = new uint8[ 18 ];
     try

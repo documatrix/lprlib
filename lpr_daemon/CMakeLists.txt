@@ -34,7 +34,6 @@ set (VALA_PACKAGES ${VALA_PACKAGES} open_dmlib-1.0)
 set (VALA_PACKAGES ${VALA_PACKAGES} dm_logger-1.0)
 set (VALA_ARGS --thread -g --vapidir=${CMAKE_INSTALL_PREFIX}/share/vala/vapi)
 
-
 set (MODULES_TO_CHECK glib-2.0 MagickWand gobject-2.0 gio-2.0 gthread-2.0 open_dmlib-1.0 dm_logger-1.0 dmtestlib-1.0)
 pkg_check_modules(DEPS REQUIRED ${MODULES_TO_CHECK})
 

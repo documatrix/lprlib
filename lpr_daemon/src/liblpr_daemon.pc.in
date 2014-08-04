@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: liblprdaemon
 Description: A library to read, analyze lpr-protokoll.
 Version: @LPR_DAEMON_VERSION@
-Libs: -L${libdir} -l@LPR_DAEMO_NAME@
+Libs: -L${libdir} -l@LPR_DAEMON_NAME@
 Libs.private: @LIBS@
-Cflags: -I${includedir}/@LPR_DAEMO_NAME@/
+Cflags: -I${includedir}/@LPR_DAEMON_NAME@/
