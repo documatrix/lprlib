@@ -24,6 +24,10 @@ endif()
 
 find_package(PkgConfig)
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL Windows)
+set(PKG_CONFIG_EXECUTABLE i686-w64-mingw32-pkg-config)
+endif()
+
 set (VALA_PACKAGES ${VALA_PACKAGES} gio-2.0)
 set (VALA_PACKAGES ${VALA_PACKAGES} glib-2.0)
 set (VALA_PACKAGES ${VALA_PACKAGES} gobject-2.0)

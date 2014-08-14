@@ -54,13 +54,23 @@ ADD_CUSTOM_COMMAND(
     COMMAND perl ../../../../dm_logger/src/preprocess_logger.pl ${CMAKE_SOURCE_DIR}/src/ ../log/messages.mdb
 )
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL Windows)
+# Install shared object
+install(
+TARGETS
+  ${LPR_SEND_NAME}
+LIBRARY ARCHIVE DESTINATION
+lib/ 
+)
+else()
 # Install shared object
 install(
 TARGETS
   ${LPR_SEND_NAME}
 LIBRARY DESTINATION
-  lib/
+lib/
 )
+endif( )
 
 # Install header files
 install(
